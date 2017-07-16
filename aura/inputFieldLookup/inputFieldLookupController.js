@@ -10,8 +10,8 @@
         component.set('v.refTypes', refTypesToUse);
         component.set("v.selectedType", selectedTypeToUse );
         
-        alert("refTypes: " + JSON.stringify(refTypesToUse));        
-        alert("selectedType: " + JSON.stringify(selectedTypeToUse));        
+        //alert("refTypes: " + JSON.stringify(refTypesToUse));        
+        //alert("selectedType: " + JSON.stringify(selectedTypeToUse));      
         
         var value = component.get('v.value');
         if(value){
@@ -39,7 +39,7 @@
     SelectSearchTypeItemClickHandler : function(component, event, helper){
         var element = event.target?event.target:event.getElement();
         var selectedType = {value:element.dataset.value, label:element.dataset.label};
-        alert("SelectSearchTypeItemClickHandler: " + JSON.stringify(selectedType));
+        //alert("SelectSearchTypeItemClickHandler: " + JSON.stringify(selectedType));
         console.info('element', element, element.dataset, selectedType);
         component.set('v.selectedType',selectedType);
         component.set('v.showSelectType', false);

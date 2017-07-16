@@ -2,6 +2,7 @@
     <aura:attribute name="isEdit" type="Boolean" default="false" />
     <aura:attribute name="value" type="Object" />    
     <aura:attribute name="refTypes" type="String[]" default="[]"/>
+    <aura:attribute name="refObjTypes" type="Object[]" />
     <aura:attribute name="type" type="String" />
     <aura:attribute name="subType" type="String" />
     <aura:attribute name="options" type="Object[]" default="[]"/>    
@@ -78,7 +79,6 @@
             <aura:if isTrue="{!v.hasBody}">
                 {!v.body}
                 <aura:set attribute="else">
-                    
                     <aura:if isTrue="{!(v.metadata.isUpdateable || v.metadata.isCreateable)? v.isEdit : false}">
                         <aura:if isTrue="{!(v.type=='Text')?true:false}">
                             <ui:inputText value="{!v.value}" class="{!'slds-input '+(v.required? ' required ' : ' ') + (v.strictRequired? ' required ':'')}" maxlength="{!v.maxlength}" />
@@ -117,7 +117,7 @@
                             <c:DuelingPicklist value="{!v.value}" options="{!v.options}" />
                         </aura:if>
                         <aura:if isTrue="{!(v.type=='Lookup')?true:false}">                                 
-                            <c:inputLookup subType="{!v.subType}" refTypes="{#v.refTypes}" value="{!v.value}" isLoggerActive="{#v.isLoggerActive}" isEdit="true" type="{!v.lookupType}" class="{!(v.required? 'required' : '') + (v.strictRequired? ' required ':' ')}" />
+                            <c:inputLookup subType="{!v.subType}" refTypes="{!v.refTypes}" value="{!v.value}" isLoggerActive="{#v.isLoggerActive}" isEdit="true" type="{!v.lookupType}" class="{!(v.required? 'required' : '') + (v.strictRequired? ' required ':' ')}" />                            
                         </aura:if>
                         <aura:if isTrue="{!(v.type=='Select')?true:false}">                            
                             <ui:inputSelect value="{!v.value}" 
@@ -142,7 +142,8 @@
                                                 <aura:set attribute="else"> 
                                                     <aura:if isTrue="{!(v.type=='Lookup')?true:false}">   
                                                         <aura:if isTrue="{!v.value}">
-                                                            <c:inputLookup subType="{!v.subType}" type="{!v.lookupType}" refTypes="{!v.refTypes}" value="{!v.value}" isLoggerActive="{!v.isLoggerActive}" isEdit="false" />
+                                                            <!--<c:inputLookup subType="{!v.subType}" type="{!v.lookupType}" refTypes="{!v.refTypes}" value="{!v.value}" isLoggerActive="{!v.isLoggerActive}" isEdit="false" />-->
+                                                            <c:inputFieldLookup type="{!v.lookupType}" refTypes="{!v.refTypes}" value="{!v.value}" isLoggerActive="{!v.isLoggerActive}" isEdit="false" />
                                                         </aura:if>
                                                         <aura:set attribute="else">
                                                             <span style="{!contentViewStyle}">
