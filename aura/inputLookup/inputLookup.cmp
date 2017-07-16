@@ -1,0 +1,85 @@
+<aura:component extends="c:ltngBase" controller="InputLookUpController" >
+    <aura:attribute name="recordDisplay" type="Map" access="private" default="{}"/>
+    <aura:attribute name="selectedType" type="String" access="private" />
+    <aura:attribute name="refTypes" type="String[]" access="public" default="[]"/>
+    <aura:attribute name="type" type="String" required="true"/>
+    <aura:attribute name="subType" type="String" />
+    <aura:attribute name="class" type="String" access="public"/>
+    <aura:attribute name="value" type="String" access="public" required="FALSE"/>    
+    <aura:attribute name="searchString" type="String" access="private"/>
+    <aura:attribute name="isLoading" type="Boolean" default="true" access="private"/>
+    <aura:attribute name="isLoadingModal" type="Boolean" default="false" access="private"/>
+    
+    <aura:attribute name="lookupResult" type="Object[]" default="[]" access="PRIVATE" />
+    <aura:attribute name="isEdit" type="Boolean" default="true" required="true"/>
+    <aura:attribute name="isShowModal" type="Boolean" default="false" access="PRIVATE"/>
+    
+    <aura:registerEvent name="inputLookupEvent" type="c:InputLookupEvt" />
+    <aura:handler name="inputLookupEvent" action="{!c.handleInputLookupEvt}" access="private"/>
+    
+    <aura:handler name="init" value="{!this}" action="{!c.initTypeAhead}" access="private"/>
+    <aura:handler name="change" value="{!v.value}" action="{!c.initTypeAhead}" access="private"/>
+    
+    <div class="slds">
+        <c:Loading isLoading="{!v.isLoading}"></c:Loading>
+        
+        <aura:if isTrue="{!v.isEdit}">
+            <div class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right">
+                <div class=" slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right">  
+                    <div class="slds-button-group" role="group">
+                        <ui:inputSelect value="{!v.selectedType}" class="{!(v.refTypes.length>1)?'':'slds-hide'}">
+                            <aura:iteration items="{!v.refTypes}" var="option">
+                                <ui:inputSelectOption label="{!option}" text="{!option}" />
+                            </aura:iteration>                        
+                        </ui:inputSelect> 
+                        <div title="{!v.recordDisplay.value}"><ui:inputText value="{!v.searchString}" class="{!'slds-input slds-combobox__input ' + v.class}" placeholder="Search" /></div>
+                        <i><lightning:buttonIcon iconName="utility:search" onclick="{!c.onSearchClickedHandler}" alternativeText="Search"/></i>
+                        <i title="Clear Selected"><lightning:buttonIcon iconName="utility:clear" disabled="{!v.recordDisplay==null}" onclick="{!c.onClearClickedHandle}" alternativeText="Clear"/></i>
+                    </div>
+                </div>
+            </div>
+            <br/>
+            <aura:set attribute="else">            
+                <a href="{!v.recordDisplay.url}">{!v.recordDisplay.value}</a>
+            </aura:set>
+        </aura:if>
+        
+        <div class="{!v.isShowModal?'':'slds-hide'}">
+            <div aura:id="confirmModal">
+                <c:modalDialog aura:id="lookupResultSelect" title="Look Up" confirmLabel="Ok" onconfirm="{!c.onConfirmClick}">
+                    <c:Loading isLoading="{!v.isLoadingModal}" />
+                    <div class=" slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right">  
+                        <div class="slds-button-group" role="group">
+                            <ui:inputText value="{!v.searchString}" class="slds-input slds-combobox__input" placeholder="Search" /> 
+                            <lightning:buttonIcon iconName="utility:search" onclick="{!c.onSearchClickedHandler}" alternativeText="Search"/>                        
+                        </div>
+                    </div>
+                    <br/>
+                    <table class="slds-table slds-table--bordered slds-no-row-hover">
+                        <thead>
+                            <tr class="slds-text-heading--label">
+                                <th scope="col" class="slds-is-sortable">
+                                    <div class="slds-truncate" title="Action">Field Name</div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="add_to_opportunity">
+                            <aura:iteration items="{!v.lookupResult}" var="item">
+                                <tr>
+                                    <td data-label="Field Name">
+                                        <div class="slds-truncate" title="Field Name">
+                                            <i>
+                                                <lightning:icon iconName="utility:info" size="x-small"></lightning:icon>
+                                            </i>
+                                            <a title="{!item.id}" onclick="{!c.onAddSelectedHandle}">{!item.value}</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </aura:iteration>
+                        </tbody>            
+                    </table>
+                </c:modalDialog>
+            </div>
+        </div>
+    </div>
+</aura:component>

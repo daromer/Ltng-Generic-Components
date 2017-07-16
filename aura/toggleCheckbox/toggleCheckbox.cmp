@@ -1,0 +1,17 @@
+<aura:component >    
+    <aura:attribute name="value" type="Boolean" default="false" />
+    <aura:attribute name="disabled" type="Boolean" default="false" />
+    <aura:attribute name="checkLabel" type="String" default="" />
+    <aura:attribute name="uncheckLabel" type="String" default="" />
+    
+    <aura:handler name="change" value="{!v.value}" action="{!c.onValueChangedHandler}" />
+    
+    <label class="slds-checkbox--toggle slds-grid">
+        <ui:inputCheckbox value="{!v.value}" disabled="{!v.disabled}" />
+        <span class="slds-checkbox--faux_container" aria-live="assertive">
+            <span class="slds-checkbox--faux"></span>
+            <span class="slds-checkbox--on">{!v.checkLabel}</span>
+            <span class="slds-checkbox--off">{!v.uncheckLabel}</span>
+        </span>
+    </label>
+</aura:component>

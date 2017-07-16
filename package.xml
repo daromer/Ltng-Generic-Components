@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <types>
+        <members>InputLookUpController</members>
+        <members>LtngFormElementController</members>
+        <members>MetadataHelper</members>
+        <members>MetadataHelper_Test</members>
+        <members>PicklistHelper</members>
+        <members>PicklistHelper_Test</members>
+        <name>ApexClass</name>
+    </types>
+    <types>
+        <members>CurrentSessionId</members>
+        <name>ApexPage</name>
+    </types>
+    <types>
+        <members>DuelingPicklist</members>
+        <members>LtngFormElement</members>
+        <members>inputFieldLookup</members>
+        <members>inputLookup</members>
+        <members>toggleCheckbox</members>
+        <name>AuraDefinitionBundle</name>
+    </types>
+    <version>39.0</version>
+</Package>

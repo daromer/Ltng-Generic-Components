@@ -1,0 +1,123 @@
+<aura:component extends="c:ltngBase" controller="InputLookUpController" >
+    <aura:attribute name="recordDisplay" type="Map" access="PRIVATE" default="{}"/>
+    <aura:attribute name="selectedType" type="Object" access="PRIVATE" />
+    <aura:attribute name="refTypes" type="Object[]" />
+    <aura:attribute name="type" type="String" required="TRUE"/>
+    <aura:attribute name="subType" type="String" />    
+    <aura:attribute name="value" type="String" required="FALSE"/>    
+    <aura:attribute name="searchString" type="String" access="PRIVATE"/>        
+    <aura:attribute name="searchResults" type="Object[]" default="[]" access="PRIVATE" />
+    <aura:attribute name="selectedItem" type="Map"  />
+    <aura:attribute name="isEdit" type="Boolean" default="TRUE" required="TRUE"/>
+    <aura:attribute name="showSelectType" type="Boolean" access="private" default="false" />
+    <aura:attribute name="class" type="string"/>
+    
+    <aura:handler name="change" value="{!v.selectedItem}" action="{!c.onSelectedItemChanged}" access="private"/>
+    
+    <aura:registerEvent name="inputLookupSearchEvt" type="c:SimpleEvent" access="private"/>
+    <aura:handler name="inputLookupSearchEvt" action="{!c.inputLookupSearchEvtHandler}" access="private"/>
+    
+    
+    <aura:registerEvent name="inputLookupSearchSelectedEvt" type="c:SimpleEvent" access="private"/>
+    <aura:handler name="inputLookupSearchSelectedEvt" action="{!c.inputLookupSearchSelectedEvtHandler}" access="private"/>
+    
+    
+    <aura:handler name="init" value="{!this}" action="{!c.onInit}" access="private"/>
+    <aura:handler name="change" value="{!v.value}" action="{!c.onInit}" access="private"/>
+    
+    <div class="slds" onfocusout="{!c.searchOnFocusOut}">
+        <aura:if isTrue="{!v.isEdit}">
+        <div class="{!'slds-combobox_container '+( (v.searchResults.length>0)?'slds-has-inline-listbox':' ' )+(v.refTypes.length>0?' slds-has-object-switcher ':' ')}">
+            
+            <div class="slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open  slds-has-object-switcher" aria-expanded="true" aria-haspopup="listbox" role="combobox">
+                
+                <aura:if isTrue="{!v.selectedItem==null}">
+                    <div class="slds-listbox_object-switcher slds-dropdown-trigger slds-dropdown-trigger_click" onclick="{!c.onSelectedRefTypeClickHandler}">
+                        <button class="slds-button slds-button_icon" aria-haspopup="true" title="Select object to search in">
+                            <span class="slds-icon_container slds-icon-standard-account" title="{!v.selectedType.label}">
+                                <lightning:icon iconName="standard:account" size="small" />
+                                <span class="slds-assistive-text" >Searching in: {!v.selectedType.label}</span>
+                            </span>
+                        </button>
+                    </div>
+                    
+                    <div aura:id="searchSection" class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right">                                                                                                
+                        <input onkeyup="{!c.searchOnKeyUP}" aura:id="searchStringInput" type="text" class="slds-input slds-combobox__input" aria-autocomplete="list" aria-controls="listbox-unique-id" autocomplete="off" role="textbox" placeholder="Search Salesforce" value="{!v.searchString}"  />                        
+                        <ui:inputSelect class="slds-hide">
+                            <aura:iteration items="{!v.refTypes}" var="ref">
+                                <ui:inputSelectOption text="{!ref}" label="{!ref}" />
+                            </aura:iteration>
+                        </ui:inputSelect>
+                        <span style="cursor:pointer;" onclick="{!c.searchButtonClickedHandler}" class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                            <lightning:icon iconName="utility:search" size="x-small"/>
+                            <span class="slds-assistive-text">Search</span>
+                        </span>
+                        <span style="cursor:pointer;" onclick="{!c.searchButtonClickedHandler}" class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                            <lightning:icon iconName="utility:search" size="x-small"/>
+                            <span class="slds-assistive-text">Search</span>
+                        </span>
+                    </div>
+                    
+                    <aura:if isTrue="{!v.showSelectType}">
+                        <div aura:id="listboxSelectSearchType" role="listbox">
+                            <ul class="slds-listbox slds-listbox_vertical slds-dropdown slds-dropdown_fluid" role="presentation">
+                                <aura:iteration items="{!v.refTypes}" var="refType">
+                                    <li role="presentation" class="slds-listbox__item">
+                                        <span class="slds-media slds-listbox__option slds-listbox__option_entity slds-listbox__option_has-meta" role="option">                                        
+                                            <span class="slds-media__body">
+                                                <span class="slds-listbox__option-text slds-listbox__option-text_entity" data-value="{!refType.value}" data-label="{!refType.label}" onclick="{!c.SelectSearchTypeItemClickHandler}">{!refType.label}</span>                                            
+                                            </span>
+                                        </span>
+                                    </li>
+                                </aura:iteration>
+                            </ul>
+                        </div>
+                    </aura:if>
+                    
+                    <aura:set attribute="else">
+                        <div aura:id="selectedSection" class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_left-right">
+                            <span class="slds-icon_container slds-icon-standard-account slds-combobox__input-entity-icon" title="account">
+                                <lightning:icon iconName="utility:account" size="small" />
+                                <span class="slds-assistive-text">{!v.selectedItem.name}</span>
+                            </span>                    
+                            <input type="text" class="slds-input slds-combobox__input" id="combobox-unique-id" aria-autocomplete="list" aria-controls="listbox-unique-id" autocomplete="off" role="textbox" placeholder="Search Salesforce" readonly="readonly" value="{!v.selectedItem.name}" />                	
+                            <button onclick="{!c.onRemoveSelectedClickHandler}" class="slds-button slds-button_icon slds-input__icon slds-input__icon_right" title="Remove selected option">
+                                <lightning:icon iconName="utility:close" size="x-small" />
+                                <span class="slds-assistive-text">Remove selected option</span>
+                            </button>
+                        </div>
+                    </aura:set>
+                </aura:if>
+                
+                <aura:if isTrue="{!v.searchResults.length>0}">
+                    <div aura:id="listbox" role="listbox" onleave="{!c.listboxOnMouseOut}">                       
+                        <ul class="slds-listbox slds-listbox_vertical slds-dropdown slds-dropdown_fluid" role="presentation">
+                            <li onclick="{!c.onCloseSearchListClickHandler}" style="text-align:right;cursor:pointer;"> <!-- class="slds-input-has-icon slds-input-has-icon_right"-->
+                                <span class="slds-button slds-button_icon slds-input__icon slds-input__icon_right" title="Close Search List">
+                                    <lightning:icon iconName="utility:close" size="xx-small" />
+                                    <span class="slds-assistive-text">Close Search List</span>
+                                </span>
+                            </li>
+                            <aura:iteration items="{!v.searchResults}" var="searchItem">                                
+                                <li role="presentation" class="slds-listbox__item" >
+                                    <span id="listbox-option-unique-id-01" class="slds-media slds-listbox__option slds-listbox__option_entity slds-listbox__option_has-meta" role="option" >                                        
+                                        <span class="slds-media__body" >
+                                            <span class="slds-listbox__option-text slds-listbox__option-text_entity" data-value="{!searchItem.value}" data-id="{!searchItem.id}" onclick="{!c.listBoxItemClicked}" >{!searchItem.name}</span>                                            
+                                        </span>
+                                    </span>
+                                </li>
+                            </aura:iteration>
+                        </ul>
+                    </div>
+                </aura:if>
+                
+            </div>
+        </div>
+        <aura:set attribute="else">
+            <a>{!v.selectedItem.name}</a>
+        </aura:set>
+        </aura:if>
+        
+    </div>
+    
+</aura:component>
