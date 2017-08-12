@@ -1,194 +1,121 @@
 ({
-    onInit : function(component, event, helper) {        
-        var options = component.get("v.options");
-        var value = component.get("v.value");  
-        
-        var optionsBasedOnValue = value? value.split(';') : [];        
-        var restOfOptions = [];
+	onInit : function(component, event, helper) {
+		console.log('onInit');
         var availableOptions = [];
-        helper.each(options, function(item){
-            var idx = optionsBasedOnValue.indexOf( item );
-            if (idx < 0 ) {                
-                availableOptions.push( helper.clone(item) );
-            }
+        var originalSetOfOptions= component.get("v.options");
+        var grabbedOptions = helper.getCurrentlyGrabbedItemsByUser(component);
+
+        helper.setListBoxOptions();
+
+        helper.foreach(originalSetOfOptions, function(option) {
+            if( ! helper.doesArrayContainsValue(grabbedOptions, option) )
+                availableOptions.push( helper.clone(option) );
         });
-        
+
         component.set("v.availableOptions", availableOptions);
-        component.set("v.selectedOptions", optionsBasedOnValue);
+        component.set("v.selectedOptions", grabbedOptions);
 	},
-    
-    onValueChange : function(component, event, helper){
-        helper.tryCatch(function(){
-            console.info("DuelingPicklist - onValueChange", event);
-            var value = helper.clone( event.getParam('value') );
-            var expIndex = component.get('v.expressionIndex'); 
-            var index = event.getParam('index');               
-            if(expIndex && !index){
-                index = expIndex;
-            }else if (!expIndex && index){
-                expIndex = index;
-                component.set('v.expressionIndex', expIndex);
-            }
-            
-            var realValue = (value && index)? value[index]:value;            
-            var valueOptions = realValue? realValue.split(';'): [];
-            component.set('v.selectedOptions', valueOptions);
-            
-        });
-    },
-    
-    optionsChangedHandler: function(component, event, helper) {
-        helper.tryCatch(function(){
-            var options = event.getParam('value')?event.getParam('value'):[];
-            var value = component.get("v.value");  
-            
-            var selectedOptionsAlsoInOptions = [];
-            var optionsBasedOnValue = value? value.split(';') : [];                    
+
+	originalOptionsChangedHandler: function(component, event, helper) {
+        console.log('originalOptionsChangedHandler');
+        try {
             var availableOptions = [];
-            
-            helper.foreach(options, function(item){
-                var idx = optionsBasedOnValue.indexOf( item );
-                if (idx < 0 ) availableOptions.push( helper.clone(item) );                
-            });
-            helper.foreach(optionsBasedOnValue, function(item){
-                if (options.indexOf(item) >= 0) selectedOptionsAlsoInOptions.push( optionsBasedOnValue[i] );
-            });
-            
-            component.set("v.availableOptions", availableOptions);
-            component.set("v.selectedOptions", selectedOptionsAlsoInOptions);            
-        });
-    },
-    
-	leftOptionSelectedHandler : function(component, event, helper) {        
-        var selectedValuesLeft = component.get('v.selectedValuesLeft');
-        selectedValuesLeft = selectedValuesLeft?selectedValuesLeft:[];
-        var currectValue = event.target.innerHTML;
-        
-        if (selectedValuesLeft.indexOf(currectValue)>=0){
-            event.target.setAttribute("aria-selected", false);
-            selectedValuesLeft.splice( selectedValuesLeft.indexOf(currectValue), 1 );
-        }else{
-            event.target.setAttribute("aria-selected", true);
-			selectedValuesLeft.push(currectValue);            
-        }
-        console.info("selectedValuesLeft",selectedValuesLeft);
-        component.set('v.selectedValuesLeft', selectedValuesLeft);        
+			var selectedOptions = [];
+
+		    var originalSetOfOptions= event.getParam('value') ? event.getParam('value') : [];
+      		var grabbedOptions = helper.getCurrentlyGrabbedItemsByUser(component);
+
+			helper.foreach(originalSetOfOptions, function(option) {
+				if( ! helper.doesArrayContainsValue(grabbedOptions, option) )
+					availableOptions.push( helper.clone(option) );
+			});
+
+			helper.foreach(grabbedOptions, function(option) {
+				if( helper.doesArrayContainsValue(originalSetOfOptions, option) )
+					selectedOptions.push( option );
+			});
+
+			component.set("v.availableOptions", availableOptions);
+			component.set("v.selectedOptions", selectedOptions);
+		}
+		catch(e) {
+			console.error("Error on originalOptionsChangedHandler:", e);
+		}
 	},
-    
-    rightOptionSelectedHandler : function(component, event, helper) {
-        var selectedValuesRight = component.get('v.selectedValuesRight');
-        selectedValuesRight = selectedValuesRight?selectedValuesRight:[];
-        var currectValue = event.target.innerHTML;
-        
-        if (selectedValuesRight.indexOf(currectValue)>=0){
-            event.target.setAttribute("aria-selected", false);
-            selectedValuesRight.splice( selectedValuesRight.indexOf(currectValue), 1 );
-        }else{
-            event.target.setAttribute("aria-selected", true);
-			selectedValuesRight.push(currectValue);            
-        }
-        console.info("selectedValuesRight",selectedValuesRight);
-        component.set('v.selectedValuesRight', selectedValuesRight);
+
+	grabbingFromAvailableBox : function(component, event, helper) {
+ 	console.log('grabbingFromAvailableBox');
+        if(event.ctrlKey)
+			helper.handleCtrlGrab( component, event.target );
+
+        else if( !event.ctrlKey )
+            helper.handleSingleGrab( component, event.target );
 	},
-    
-    addToSelectedHandler : function(component, event, helper) { 
-        helper.tryCatch(function(){
-            var options = component.get("v.options");
-            var availableOptions = component.get("v.availableOptions");
-            var selectedOptions = component.get("v.selectedOptions");        
-            var selectedValuesLeft = component.get("v.selectedValuesLeft");
-            var selectedValuesRight = component.get("v.selectedValuesRight");
-            
-            var listIdxOptions = [];
-            
-            helper.foreach(selectedValuesLeft,function(left){
-                if (options.indexOf(left)>=0){
-                    listIdxOptions.push(left);
-                }
-            });
-            
-            var resultAvailableOptions = [];
-            var resultSelectedOptions = [];
-            
-            if (selectedValuesLeft.length > 0 && listIdxOptions.length > 0){    
-                
-                helper.foreach(listIdxOptions,function(item){
-                    if ( availableOptions.indexOf(item)>= 0 ) availableOptions.splice(availableOptions.indexOf(item), 1);
-                    if( selectedOptions.indexOf(item) < 0) selectedOptions.push( item );
-                });
-                
-                helper.foreach(availableOptions, function(item){ if (item && item != null) resultAvailableOptions.push( helper.clone(item) ) });
-                helper.foreach(selectedOptions, function(item){ if (item && item != null) resultSelectedOptions.push( helper.clone(item) ) });
-                
-                
-                console.debug("resultAvailableOptions", resultAvailableOptions);
-                console.debug("resultSelectedOptions", resultSelectedOptions);
-                
-                component.set("v.availableOptions", resultAvailableOptions);
-                component.set("v.selectedOptions", resultSelectedOptions);  
-                component.set("v.selectedValuesLeft", []);
-                component.set("v.selectedValuesRight", []);
-            }  
-        });
-    },
-    
-    removeFromSelectedHandler : function(component, event, helper) {		
-        helper.tryCatch(function(){
-            var options = component.get("v.options");
-            var availableOptions = component.get("v.availableOptions");
-            var selectedOptions = component.get("v.selectedOptions");        
-            var selectedValuesLeft = component.get("v.selectedValuesLeft");
-            var selectedValuesRight = component.get("v.selectedValuesRight");
-            
-            var listIdxOptions = [];
-            
-            helper.foreach(selectedValuesRight,function(right){
-                if (options.indexOf(right)>=0){
-                    listIdxOptions.push(right);
-                }
-            });
-            
-            var resultAvailableOptions = [];
-            var resultSelectedOptions = [];
-            
-            if (selectedValuesRight.length > 0 && listIdxOptions.length > 0){    
-                
-                helper.foreach(listIdxOptions,function(item){
-                    if ( availableOptions.indexOf(item) < 0 ) availableOptions.push(item);
-                    if( selectedOptions.indexOf(item) >= 0) selectedOptions.splice(selectedOptions.indexOf(item),1);
-                });
-                
-                helper.foreach(availableOptions, function(item){ if (item && item != null) resultAvailableOptions.push( helper.clone(item) ) });
-                helper.foreach(selectedOptions, function(item){ if (item && item != null) resultSelectedOptions.push( helper.clone(item) ) });
-                
-                
-                console.debug("resultAvailableOptions", resultAvailableOptions);
-                console.debug("resultSelectedOptions", resultSelectedOptions);
-                
-                component.set("v.availableOptions", resultAvailableOptions);
-                component.set("v.selectedOptions", resultSelectedOptions);  
-                component.set("v.selectedValuesLeft", []);
-                component.set("v.selectedValuesRight", []);
-            }  
-        });       
+
+    grabbingFromSelectedBox : function(component, event, helper) {
+		console.log('grabbingFromAvailableBox');
+        if(event.ctrlKey)
+			helper.handleCtrlGrab( component, event.target );
+
+        else if( !event.ctrlKey )
+            helper.handleSingleGrab( component, event.target );
 	},
-    
-    selectedValueChanged : function(component, event, helper){
-        console.info("selectedValueChanged	: ", event.getParam('value'));                
-    },
-    
-    selectedOptionsChangedHandler : function(component, event, helper){
-        var selectedOptions = helper.clone(event.getParam('value'));
-        var value = (selectedOptions && selectedOptions.length > 0)? selectedOptions.join(';'):null;
-        console.info("selectedOptionsChangedHandler - value", value);
-        var availableOptions = component.get('v.availableOptions');
-        helper.each(selectedOptions,function(item){
-            if(availableOptions.indexOf(item) >= 0){
-                availableOptions.splice(availableOptions.indexOf(item), 1);
+
+    addToSelectedBoxHandler : function(component, event, helper) {
+        console.log('addToSelectedBoxHandler');
+        var originalSetOfOptions= component.get("v.options");
+        var availableOptions = component.get("v.availableOptions");
+        var selectedOptions = component.get("v.selectedOptions");
+        var grabbedOptions = component.get("v.grabbedOptions");
+
+        var resultAvailableOptions = [];
+        var resultSelectedOptions = [];
+
+        if(  grabbedOptions.length >= 1 && helper.arrayContainsArray(originalSetOfOptions, grabbedOptions) ) {
+            if( helper.arrayContainsArray(availableOptions, grabbedOptions) ) {
+
+                helper.removeElementsInMainArrayFromArray(component, availableOptions, grabbedOptions );
+                resultAvailableOptions = availableOptions;
+
+               	resultSelectedOptions = helper.concatArrays(selectedOptions, grabbedOptions);
+
+                helper.updateBoxes(component,resultAvailableOptions,resultSelectedOptions);
             }
-        });        
-        component.set("v.value",value); 		                
-        component.set('v.selectedValuesRight', selectedOptions);
-        component.set('v.selectedValuesLeft', availableOptions);
+        }
+	},
+
+    removeFromSelectedBoxHandler : function(component, event, helper) {
+          console.log('removeFromSelectedBoxHandler');
+		var originalSetOfOptions= component.get("v.options");
+        var availableOptions = component.get("v.availableOptions");
+        var selectedOptions = component.get("v.selectedOptions");
+        var grabbedOptions = component.get("v.grabbedOptions");
+
+        var resultAvailableOptions = [];
+        var resultSelectedOptions = [];
+
+        if( grabbedOptions.length >= 1 && helper.arrayContainsArray(originalSetOfOptions, grabbedOptions) ) {
+            if( helper.arrayContainsArray(selectedOptions, grabbedOptions) ) {
+
+    	        helper.removeElementsInMainArrayFromArray(component, selectedOptions, grabbedOptions);
+                resultSelectedOptions = selectedOptions;
+
+                resultAvailableOptions =  helper.concatArrays(availableOptions, grabbedOptions);
+
+                helper.updateBoxes(component,resultAvailableOptions,resultSelectedOptions);
+            }
+        }
+	},
+
+    grabbedOptionChanged : function(component, event, helper) {
+           console.log('grabbedOptionChanged');
+	},
+
+    selectedOptionsChangedHandler : function(component, event, helper) {
+        console.log('selectedOptionsChangedHandler');
+        var selectedOptions = event.getParam('value');
+		var selectedOptionsAsString = helper.convertArrayToSemicolonSeparatedString(selectedOptions);
+
+         component.set("v.value", selectedOptionsAsString);
     }
 })
