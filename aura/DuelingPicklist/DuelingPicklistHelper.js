@@ -17,7 +17,7 @@
 	},
 
     removeElementsInMainArrayFromArray : function(component, mainArray, array) {
-        array.forEach( a => {
+        array.forEach( function(a){
         	this.data = {};
             this.data.position = mainArray.indexOf(a);
 			this.data.isContained = this.data.position >= 0;
@@ -115,13 +115,10 @@
     	this.markedOptions = document.querySelectorAll( component.get('v.UI_OPTIONS_WHICH_ARE_SELECTED') );
 
         Array.from(this.markedOptions)
-		.forEach( opt =>
-			opt.setAttribute( component.get('v.UI_SELECTED_OPTION_ATTRIBUTE'), false )
-		);
+        .forEach( function(opt){
+            opt.setAttribute( component.get('v.UI_SELECTED_OPTION_ATTRIBUTE'), false )
+        });
 
 		target.setAttribute( component.get('v.UI_SELECTED_OPTION_ATTRIBUTE'), true );
 	}
-
-
-
 })

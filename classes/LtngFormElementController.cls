@@ -9,7 +9,8 @@ global class LtngFormElementController {
             }
         }
         if (!string.isempty(objectName) && !string.isEmpty(fieldName)){
-            return JSON.serialize(MetadataHelper.getFieldsMetadataMap(objectName, new string[]{fieldName}, false, recordTypeApiName));
+            //return JSON.serialize(MetadataHelper.getFieldsMetadataMap(objectName, new string[]{fieldName}, false, recordTypeApiName));
+            return JSON.serialize(MetadataHelper.getFieldInfos(objectName, new string[]{fieldName}, false, recordTypeApiName));
         }
         return '{}';
     }

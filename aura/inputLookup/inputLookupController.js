@@ -11,6 +11,7 @@
             if(searchString) search = String(searchString);            
             
             var params= {
+                staticSearchString : component.get ('v.lookupFilter'),
                 searchString : (searchString || '*'),
                 sobjectType : (selectedType || type ),
                 sobjectSubType : subType                 
@@ -71,7 +72,7 @@
     },
 
     onAddSelectedHandle : function(component, event, helper){
-console.log('onAddSelectedHandle');        
+        console.log('onAddSelectedHandle');        
         var itemId = event.target.title;
         var lookupResult = component.get("v.lookupResult");
         

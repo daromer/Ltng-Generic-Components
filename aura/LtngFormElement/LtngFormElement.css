@@ -7,7 +7,9 @@
     border-left-color: #c00;
     border-left-width:5px;
 }
-.THIS redColor{color:red;}
+.THIS redColor{
+    /*color:red;*/
+}
 .THIS select.default{ height:120px !important; }
 .THIS select.small { height:30px !important; }
 .THIS select.big{ height:80px !important; }

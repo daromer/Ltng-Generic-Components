@@ -22,6 +22,9 @@
                             var value = component.get('v.controllerFieldValue');
                             var oldValue = null;
                             helper.processDependentPicklistValues(component, value, oldValue, helper.clone(retrievedMetadata.DependencyMap), helper);                            
+                            //---
+                            helper.startValidation(component, helper);
+                            //---
                         });
                     });
                 }else if( metadata ){                                    
@@ -34,19 +37,30 @@
                     }else if (metadata && metadata.PicklistValues){
                         component.set('v.options', metadata.PicklistValues);
                     }
-                    //validationPart();
+                    //---
+                    helper.startValidation(component, helper);
+                    //---                    
                 }else if(metadata && metadata.PicklistValues){                
                     component.set('v.options', metadata.PicklistValues);                
-                }
+                    //---
+                    helper.startValidation(component, helper);
+                    //---
+                }                
             }else{
                 if (getMetadataOnInit){
                     helper.getMetadataMapFromServer(component, helper, function getMetadataMapFromServerCallback(retrievedMetadata){                        
                         helper.tryCatch(function(){
                             helper.initializeMetadata(component, retrievedMetadata, fieldName);                            
+                            //---
+                            helper.startValidation(component, helper);
+                            //---
                         });
                     });
                 }else{
                     helper.initializeMetadata(component, metadata, fieldName);
+                    //---
+                    helper.startValidation(component, helper);
+                    //---
                 }               
             }
         });
@@ -123,8 +137,11 @@
     
     validationExpressionChangeHandler: function (component, event, helper){
         helper.logger(component).info("validationExpressionChangeHandler");
+        if (component.get('v.required')){
+            console.info("%%%%% Field ["+component.get('v.fieldName')+"]", component.get('v.value'));
+        }
         var expression = component.get('v.validationExpression');
-        helper.startValidation(component, helper);
+        helper.startValidation(component, helper);        
         //event.stopPropagation();
     }
 })

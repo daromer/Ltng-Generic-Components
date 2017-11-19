@@ -5,6 +5,30 @@ global class InputLookUpController {
         global String id{get;set;}
     }
     
+    global static string  getSObjectNameFromPrefix(string prefix){ 
+        for(EntityDefinition ed : [Select QualifiedApiName from EntityDefinition where keyPrefix=:prefix limit 1]){
+            return ed.QualifiedApiName;
+        }
+        return null;
+    }
+    
+    global static string getBaseUrl(){
+        return ((Network.getNetworkId() != null)? Site.getBaseUrl() : '') ;
+    }
+    
+    global static string  getNameFieldFromSObject(string sobjectName){        
+        Schema.DescribeSObjectResult dor = Schema.getGlobalDescribe().containsKey(sobjectName)?Schema.getGlobalDescribe().get(sobjectName).getDescribe():null;
+        if (dor != null){
+            for (string fieldName : dor.fields.getMap().keySet()){
+                Schema.DescribeFieldResult field = dor.fields.getMap().get(fieldName).getDescribe();
+                if(field.isNameField()){
+                    return field.getName();
+                }
+            } 
+        }
+        return null;
+    }
+    
     @AuraEnabled
     global static String getCurrentValue(String type, String value){
         map<string, object> resultMap = new map<string,object>();
@@ -87,11 +111,15 @@ global class InputLookUpController {
     
     
     @AuraEnabled
-    global static String getSearchResults(String searchString, String sobjectType, string sobjectSubType){
+    global static String getSearchResults(String searchString, String sobjectType, string sobjectSubType, string staticSearchString){
         ResponseWrapper resp = new ResponseWrapper();
         resp.success = true;        
         String ownerQuery;        
         try{
+        	
+        	system.debug ('staticSearchString >>> ' + staticSearchString);
+        	system.debug ('searchString >>> ' + searchString);
+        	
             List<SearchResult> resultList = new List<SearchResult>();
             
             string likeSearch = '%'+searchString+'%';
@@ -104,15 +132,21 @@ global class InputLookUpController {
             
             integer resultLimit = 20;
             
-            if( string.isempty(searchString) ||  (searchString != '*') ) whereParts.add(' (' + nameField + ' like :likeSearch ) ');
+            if( string.isempty(searchString) ||  (searchString != '*') ) 
+            	whereParts.add(' (' + nameField + ' like :likeSearch ) ');
             
             if(sobjectType == 'GROUP' && sobjectSubType =='QUEUE'){
                 whereParts.add(' ( TYPE = :sobjectSubType )');
             }
             
+            if (staticSearchString != '' && staticSearchString != null)
+            	whereParts.add (staticSearchString);
+            
             wherePart = (whereParts.size()>0) ? (' WHERE ' + string.join(whereParts, ' AND ') + ' ') : ' ';
             
             string query = 'Select Id, ' + nameField + ' from ' + sobjectType + wherePart + ' ORDER BY ' + nameField + ' limit :resultLimit';
+            
+            system.debug ('query >>> ' + query);
             
             for (SObject o : Database.query(query)){
                 SearchResult sr = new SearchResult();	
@@ -242,8 +276,8 @@ global class InputLookUpController {
         try{
             if (!string.isempty(recordId)){
                 string prefix = string.valueOf(recordId).substring(0,3);
-                string sobjectName = RecordDisplayController.getSObjectNameFromPrefix(prefix);
-                string nameField = RecordDisplayController.getNameFieldFromSObject(sobjectName);
+                string sobjectName = getSObjectNameFromPrefix(prefix);
+                string nameField = getNameFieldFromSObject(sobjectName);
                 if ( !string.isEmpty(sobjectName) && !string.isEmpty(nameField) ){                                                            
                     List<SObject> queryResult =  Database.query('SELECT Id, ' + nameField + ' FROM ' + sobjectName + ' WHERE id =:recordId limit 1');
                     if(queryResult.size() > 0){
@@ -253,7 +287,7 @@ global class InputLookUpController {
                         mapResult.put('record', queryResult[0] );
                         mapResult.put('prefix', prefix);
                         mapResult.put('sobjectName', sobjectName);                        
-                        mapResult.put('url', RecordDisplayController.getBaseUrl() + '/' +  (string)queryResult[0].get('Id') );
+                        mapResult.put('url', getBaseUrl() + '/' +  (string)queryResult[0].get('Id') );
                         resp.data = mapResult;
                     }else{                        
                         resp.success = false;

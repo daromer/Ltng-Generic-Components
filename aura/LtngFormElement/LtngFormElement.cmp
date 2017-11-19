@@ -1,14 +1,13 @@
-<aura:component extends="c:ltngBase" access="global" controller="LtngFormElementController">
-    <aura:attribute name="isEdit" type="Boolean" default="false" />
-    <aura:attribute name="value" type="Object" />    
-    <aura:attribute name="refTypes" type="String[]" default="[]"/>
-    <aura:attribute name="refObjTypes" type="Object[]" />
-    <aura:attribute name="type" type="String" />
-    <aura:attribute name="subType" type="String" />
-    <aura:attribute name="options" type="Object[]" default="[]"/>    
-    <aura:attribute name="multiple" type="boolean" default="false"/>
-    <aura:attribute name="bigger" type="boolean" default="false"/>
-    <aura:attribute name="metadata" type="Map" default="{'isAccessible':true, 'isUpdateable':true, 'Label':''}" />
+<aura:component extends="c:ltngBase" access="global" controller="LtngFormElementController" description="represents an SObject field in a record, depending of the type of the field, it'll render in a diffrent way">
+    <aura:attribute name="isEdit" type="Boolean" default="false" description="If True, it'll render the component with some kind of input, if not, it'll just show the value of it ( which also depents of the type)"/>
+    <aura:attribute name="value" type="Object" description="The value of the field" />    
+    <aura:attribute name="refTypes" type="String[]" default="[]" description="Used by the inputLookup, is used to specify what types can the lookup show in the search ( for example, the Lead.Owner can be ['User','Group'] )"/>
+    <aura:attribute name="type" type="String" description="The type of the field been rendered, if the strictModeOn is true, this field is settup based on the metadata" />
+    <aura:attribute name="subType" type="String" description="Workaround field to be used in the lookup to specify a subtype, for example, 'Queue' "/>
+    <aura:attribute name="options" type="Object[]" default="[]" description="Used by the inputSelect (when is a type 'Select') to specify the options, example: ['test','option']" />    
+    <aura:attribute name="multiple" type="boolean" default="false" description="Specifies if, when the type is 'Select', that is a multi-select type of component that should be render"/>
+    <aura:attribute name="bigger" type="boolean" default="false" description="Used when the type is 'Select' and the 'multiselect' is true, specifies if the inputSelect should be bigger"/>
+    <aura:attribute name="metadata" type="Map" default="{'isAccessible':true, 'isUpdateable':true, 'Label':''}" description="Metadata of the field it represents, based on this map, most of the internal configuration is based on this"/>
     <aura:attribute name="metadataMainMap" type="Map" />
     <aura:attribute name="showLabelIcon" type="Boolean" default="true" />
     <aura:attribute name="showError" type="Boolean" default="false" />
@@ -44,6 +43,8 @@
     <aura:attribute name="InputSelectBigger" type="Boolean" />
     <aura:attribute name="InputSelectBiggest" type="Boolean" />
     
+    <aura:attribute name="timezone" type="Integer" />
+    
     
     <!-- ************** Experiments ************** -->
     <!-- Strict Mode -->
@@ -73,12 +74,13 @@
     
     <aura:handler name="change" value="{!v.value}" action="{!c.onValueChangedHandler}"/>     
     <aura:registerEvent name="onValueChanged" type="c:SimpleEvent" access="PUBLIC" />
-    <div class="{!v.elementClass+' '+(v.isEdit?'':'slds-has-divider--bottom') + ' ' + v.elementSize + ' ' + (v.showError? ' slds-has-error' : '')+' '+(v.validationErrors.length>0? ' slds-has-error' : '')+' '+(v.errors.length>0? ' slds-has-error' : '')+(v.required? ' slds-is-required' : '') +' ' + v.class + ' ' + (v.hide?'slds-hide':'') + ' ' + (v.metadata.isAccessible?'':'slds-hide') }">
+    <div class="{!v.elementClass+' '+(v.isEdit?' ':' slds-has-divider--bottom ') + ' ' + v.elementSize + ' ' + (v.showError? ' slds-has-error ' : ' ')+' '+(v.validationErrors.length>0? ' slds-has-error ' : ' ')+' '+(v.errors.length>0? ' slds-has-error ' : ' ')+(v.required? ' slds-is-required ' : ' ') +' ' + v.class + ' ' + (v.hide?' slds-hide ':'' ) + ' ' + (v.metadata.isAccessible?' ':' slds-hide ') }">
         <c:tooltipIconLabel helptext="{!v.labelHelpText}" FieldMetadataObject="{!v.metadata}" ShowIcon="{!v.showLabelIcon}" required="{!v.required}" labelStyle="{!v.labelStyle}" label="{!v.labelText}" />
         <div class="slds-form-element__control">
             <aura:if isTrue="{!v.hasBody}">
                 {!v.body}
                 <aura:set attribute="else">
+                    
                     <aura:if isTrue="{!(v.metadata.isUpdateable || v.metadata.isCreateable)? v.isEdit : false}">
                         <aura:if isTrue="{!(v.type=='Text')?true:false}">
                             <ui:inputText value="{!v.value}" class="{!'slds-input '+(v.required? ' required ' : ' ') + (v.strictRequired? ' required ':'')}" maxlength="{!v.maxlength}" />
@@ -117,7 +119,7 @@
                             <c:DuelingPicklist value="{!v.value}" options="{!v.options}" />
                         </aura:if>
                         <aura:if isTrue="{!(v.type=='Lookup')?true:false}">                                 
-                            <c:inputLookup subType="{!v.subType}" refTypes="{!v.refTypes}" value="{!v.value}" isLoggerActive="{#v.isLoggerActive}" isEdit="true" type="{!v.lookupType}" class="{!(v.required? 'required' : '') + (v.strictRequired? ' required ':' ')}" />                            
+                            <c:inputLookup subType="{!v.subType}" refTypes="{#v.refTypes}" value="{!v.value}" isLoggerActive="{#v.isLoggerActive}" isEdit="true" type="{!v.lookupType}" class="{!(v.required? 'required' : '') + (v.strictRequired? ' required ':' ')}" />
                         </aura:if>
                         <aura:if isTrue="{!(v.type=='Select')?true:false}">                            
                             <ui:inputSelect value="{!v.value}" 
@@ -141,14 +143,23 @@
                                                 <ui:inputCheckbox disabled="true" value="{!v.value}" />                        
                                                 <aura:set attribute="else"> 
                                                     <aura:if isTrue="{!(v.type=='Lookup')?true:false}">   
-                                                        <aura:if isTrue="{!v.value}">
-                                                            <!--<c:inputLookup subType="{!v.subType}" type="{!v.lookupType}" refTypes="{!v.refTypes}" value="{!v.value}" isLoggerActive="{!v.isLoggerActive}" isEdit="false" />-->
-                                                            <c:inputFieldLookup type="{!v.lookupType}" refTypes="{!v.refTypes}" value="{!v.value}" isLoggerActive="{!v.isLoggerActive}" isEdit="false" />
+                                                        <aura:if isTrue="{!v.value}">                                                            
+                                                            <c:inputLookup subType="{!v.subType}" type="{!v.lookupType}" refTypes="{!v.refTypes}" value="{!v.value}" isLoggerActive="{!v.isLoggerActive}" isEdit="false" />
                                                         </aura:if>
                                                         <aura:set attribute="else">
                                                             <span style="{!contentViewStyle}">
-                                                                <ui:OutputText class="{!(v.required? ' required ' : ' 123123 ')+( (v.type=='TextArea')?'slds-hide':'')}" value="{!v.value}" />
-                                                                <ui:outputRichText class="{!'redColor '+(v.type=='TextArea'?'':'slds-hide')}" value="{!v.value}" />
+                                                                <aura:if isTrue="{!v.type=='DateTime'}">
+                                                                    <ui:outputDateTime timezone="{!v.timezone}" value="{!v.value}"/>
+                                                                    <aura:set attribute="else">
+                                                                        <aura:if isTrue="{!v.type=='Date'}">
+                                                                            <ui:outputDate value="{!v.value}"/>
+                                                                            <aura:set attribute="else">
+                                                                                <ui:OutputText class="{!(v.type=='TextArea')?' slds-hide ':' '}" value="{!v.value}" />
+                                                                                <ui:outputRichText class="{!(v.type=='TextArea'?'':'slds-hide')}" value="{!v.value}" />
+                                                                            </aura:set>
+                                                                        </aura:if>                                                                        
+                                                                    </aura:set>
+                                                                </aura:if>                                                                
                                                             </span>
                                                         </aura:set>
                                                     </aura:if>
@@ -166,14 +177,14 @@
         <aura:if isTrue="{!v.errors?v.errors.length>0:false}">
             <ul class="has-error uiInputDefaultError uiInput uiInputText uiInput--default uiInput--input" data-aura-class="uiInputDefaultError uiInput uiInputText uiInput--default uiInput--input" >            
                 <aura:iteration items="{!v.errors}" var="e">
-                    <li class="form-element__help"  ><aura:text value="{!e.message}" /></li>
+                    <li class="form-element__help"  ><ui:outputText value="{!e.message}" /></li>
                 </aura:iteration>
             </ul>
         </aura:if>
         <aura:if isTrue="{!v.validationErrors?v.validationErrors.length>0:false}">
             <ul class="has-error uiInputDefaultError uiInput uiInputText uiInput--default uiInput--input" data-aura-class="uiInputDefaultError uiInput uiInputText uiInput--default uiInput--input" >            
                 <aura:iteration items="{!v.validationErrors}" var="e">
-                    <li class="form-element__help"  ><aura:text value="{!e.message}" /></li>
+                    <li class="form-element__help"  ><ui:outputText value="{!e.message}" /></li>
                 </aura:iteration>
             </ul>
         </aura:if>        

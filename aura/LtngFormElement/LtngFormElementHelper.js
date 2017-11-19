@@ -5,7 +5,7 @@
         "DATETIME":"DateTime",
         "DATE":"Date",
         "BOOLEAN":"Checkbox",
-        "CURRENCY":"Number",
+        "CURRENCY":"Currency",
         "DOUBLE":"Number",
         "EMAIL":"Email",
         "ID":"Lookup",
@@ -20,7 +20,7 @@
      
         var logger = me.logger(component);
         var cloneMetadata = me.clone(metadata);
-           console.log(cloneMetadata,'::cloneMetadata')  ;   
+           logger.log(cloneMetadata,'::cloneMetadata')  ;   
         if (cloneMetadata && cloneMetadata.Type && typeof(cloneMetadata.Type)=='string'){            
             initMeta(component, cloneMetadata);
             logger.info("INITIALIZED...", cloneMetadata, component);
@@ -37,14 +37,18 @@
             logger.warn("META====> ", m);            
             var type = me.getType[m.Type];
             logger.info("Found Type: " + type);             
-            component.set('v.type', type? type:'Text');            
+            component.set('v.type', type? type : component.get('v.type'));
             if(m.Type == "MULTIPICKLIST"){                
                 component.set('v.InputSelectDefault', true);
                 component.set("v.multiple", true);
-            }
-            component.set('v.labelText',m.Label);
-            component.set("v.maxlength", m.Length);                        
+            }            
+            if ( !component.get('v.labelText') ) component.set('v.labelText', m.Label);
+            if ( !component.get('v.labelHelpText') ) component.set('v.labelHelpText', m.HelpText);
+            
+            component.set("v.maxlength", m.Length);
+            
             component.set('v.controllerFieldName', m.Controller);
+            
             var controllerValue = component.get('v.controllerFieldValue');
             var dependencyMap = m.DependencyMap?m.DependencyMap:[];
             component.set('v.dependencyMap', dependencyMap );
@@ -53,13 +57,6 @@
                 console.info('IS REFERENCE...');
                 referenceItems =  m.ReferenceTo.split(',');
                 component.set('v.refTypes', referenceItems);
-                var refObjTypes = [];
-                me.each(referenceItems, function(t){
-                    var refType = {value:t};
-                    refType.label = ( m.Name.toLowerCase() == 'ownerid' && t.toLowerCase()=='group' )? 'QUEUE' : t;
-                    refObjTypes.push(refType);
-                });
-                component.set('v.refObjTypes', refObjTypes);
                 
                 if(m.ReferenceTo.indexOf('User')==-1)
             		component.set('v.lookupType', referenceItems[0] );
@@ -195,11 +192,19 @@
             var condition = conditionsSplit[i];
             var conParts = condition.split(';;;');                
             var actualValue = conParts[0];
+            
             var conCheck = conParts[1];
             var valToConpare = conParts[2];
-            var validationErrorMessage = conParts[3];            
-            var strFieldValue = actualValue? actualValue.toString().trim() : actualValue;
-            var numFieldValue = actualValue? Number.parseFloat(actualValue.toString().trim()) : actualValue;
+            var validationErrorMessage = conParts[3];
+            
+            var actualHasGetExpression = (actualValue.startsWith('{{') && actualValue.endsWith('}}'));
+            var actualGetExpression = actualHasGetExpression? actualValue.substring(2, actualValue.length -2): null;
+            var actualGetExpressionValue = actualHasGetExpression? component.get("{!"+actualGetExpression+"}"): null;
+            
+            
+            var strFieldValue = actualHasGetExpression? actualGetExpressionValue : (actualValue? actualValue.toString().trim() : actualValue);
+            var numFieldValue = actualHasGetExpression? Number.parseFloat(actualGetExpressionValue) : (actualValue? Number.parseFloat(actualValue.toString().trim()) : actualValue);
+            
             if (conCheck == 'like' && strFieldValue){
                 singleCondition.result = strFieldValue.indexOf(valToConpare)>=0;
             }else if(conCheck == 'notLike' && strFieldValue){
@@ -225,6 +230,7 @@
                 }
             }else if(conCheck == 'is'){
                 if (valToConpare=="empty"){
+                    //console.info("########## comparing 'IS': [", singleCondition.result,"]", strFieldValue);
                     singleCondition.result = (strFieldValue)?false:true;
                 }else{
                     var regex = self.getRegex()[valToConpare];

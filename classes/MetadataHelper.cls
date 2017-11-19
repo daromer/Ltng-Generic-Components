@@ -6,10 +6,295 @@ Last Modified By   :
 Example            : map<string, map<string,object>> opportunityMetadata = MetadataHelper.getFieldsMetadataMap('Opportunity', new string[]{'StageName'},false,null);
 **************************************/
 
-global class MetadataHelper {
+global without sharing class MetadataHelper {
+    
+    // *****************BEGIN EXPERIMENTS*********************
+    global class FieldInfo {
+        @AuraEnabled global string Name{get;set;}
+        @AuraEnabled global string ReferenceTargetField{get;set;}
+        @AuraEnabled global string[] ReferenceTo{get;set;}
+        @AuraEnabled global map<string, SObjectInfo> ReferenceToInfo{get;set;}
+        @AuraEnabled global string Label{get;set;}
+        @AuraEnabled global string HelpText{get;set;}
+        @AuraEnabled global string DefaultValue{get;set;}
+        @AuraEnabled global string Controller{get;set;}        
+        @AuraEnabled global FieldInfo ControllerInfo{get;set;} 
+        @AuraEnabled global string Type{get;set;}
+
+        @AuraEnabled global integer Digits{get;set;}
+        @AuraEnabled global integer Length{get;set;}
+        @AuraEnabled global integer Precision{get;set;}
+
+
+        @AuraEnabled global boolean isDependentPicklist {get;set;}
+        @AuraEnabled global boolean isNamePointing {get;set;}
+        @AuraEnabled global boolean isAccessible {get;set;}
+        @AuraEnabled global boolean isUpdateable {get;set;}
+        @AuraEnabled global boolean isCreateable {get;set;}
+        @AuraEnabled global boolean isCaseSensitive {get;set;}
+        @AuraEnabled global boolean isCascadeDelete {get;set;}
+        @AuraEnabled global boolean isDefaultedOnCreate {get;set;}
+        @AuraEnabled global boolean isGroupable {get;set;}
+        @AuraEnabled global boolean isHtmlFormatted {get;set;}
+        @AuraEnabled global boolean isPermissionable {get;set;}
+        @AuraEnabled global boolean isRestrictedDelete {get;set;}
+        @AuraEnabled global boolean isRestrictedPicklist {get;set;}
+        @AuraEnabled global boolean isSortable {get;set;}
+        @AuraEnabled global boolean isUnique {get;set;}
+        @AuraEnabled global boolean isWriteRequiresMasterRead {get;set;}
+        @AuraEnabled global boolean isAutoNumber {get;set;}
+        @AuraEnabled global boolean isCalculated {get;set;}
+        @AuraEnabled global boolean isCustom {get;set;}
+        @AuraEnabled global boolean isIdLookup {get;set;}
+        @AuraEnabled global boolean isNameField {get;set;}
+        @AuraEnabled global boolean isNillable {get;set;}
+        
+        @AuraEnabled global list<string> PicklistValues{get;set;}
+        @AuraEnabled global list<map<string,string>> PicklistValueInfos{get;set;}        
+        
+        @AuraEnabled global map<string, string[]> DependencyMap{get;set;}        
+        @AuraEnabled global list<map<string,object>> DependencyInfo{get;set;}
+        
+        public FieldInfo(Schema.DescribeFieldResult init, string sobjectName, boolean sortPicklistValues, string recordTypeApiName){
+            this.Name= init.getName();
+            this.ReferenceTargetField= init.getReferenceTargetField();
+            
+            this.ReferenceTo = new list<string>();
+            this.ReferenceToInfo = new map<string,SObjectInfo>();
+            
+            //ReferenceToMap
+            for (Schema.SObjectType sot : init.getReferenceTo() ) {                
+                this.ReferenceTo.add(sot.getDescribe().getName());                
+                this.ReferenceToInfo.put(sot.getDescribe().getName(), new SObjectInfo(sot.getDescribe()));
+            }
+            
+            this.Label= init.getLabel();
+            this.HelpText= init.getInlineHelpText();
+            this.DefaultValue= string.valueOf(init.getDefaultValue());
+            this.Controller = (init.getController() != null)?init.getController().getDescribe().getName() : '';
+            this.Type = string.valueOf(init.getType());
+            
+            this.Digits = init.getDigits();
+            this.Length = init.getLength();
+            this.Precision = init.getPrecision();
+            
+            this.isDependentPicklist = init.isDependentPicklist();
+            this.isNamePointing = init.isNamePointing();
+            this.isAccessible = init.isAccessible();
+            this.isUpdateable = init.isUpdateable();
+            this.isCreateable = init.isCreateable();
+            this.isCaseSensitive = init.isCaseSensitive();
+            this.isCascadeDelete = init.isCascadeDelete();
+            this.isDefaultedOnCreate = init.isDefaultedOnCreate();
+            this.isGroupable = init.isGroupable();
+            this.isHtmlFormatted = init.isHtmlFormatted();
+            this.isPermissionable = init.isPermissionable();
+            this.isRestrictedDelete = init.isRestrictedDelete();
+            this.isRestrictedPicklist = init.isRestrictedPicklist();
+            this.isSortable = init.isSortable();
+            this.isUnique = init.isUnique();
+            this.isWriteRequiresMasterRead = init.isWriteRequiresMasterRead();
+            this.isAutoNumber = init.isAutoNumber();
+            this.isCalculated = init.isCalculated();
+            this.isCustom = init.isCustom();
+            this.isIdLookup = init.isIdLookup();
+            this.isNameField = init.isNameField();
+            this.isNillable = init.isNillable();
+            
+            
+            set<string> picklistValuesByRecordType = null; 
+            
+            if (recordTypeApiName != null && init.getController() != null)
+                picklistValuesByRecordType = new set<string>( PicklistHelper.getPicklistValuesByRecordType(
+                    init.getSobjectField().getDescribe().getName(), 
+                    init.getController().getDescribe().getName(), 
+                    recordTypeApiName
+                ) );            
+            
+            system.debug('picklistValuesByRecordType==> ' + JSON.serialize(picklistValuesByRecordType));
+            
+            this.PicklistValues = new list<string>();
+            this.PicklistValueInfos = new list<map<string,string>>();            
+            
+            for (Schema.PicklistEntry pe : init.getPicklistValues()){
+                if (pe.isActive()){ 
+                    map<string,string> m = new map<string,string>();
+                    m.put('value', pe.getValue());
+                    m.put('label', pe.getLabel());
+                    if (picklistValuesByRecordType != null){
+                        if (picklistValuesByRecordType.contains( pe.getValue() )){
+                        	this.PicklistValues.add(pe.getValue());
+                            this.PicklistValueInfos.add(m);
+                        }
+                    }else{
+                        this.PicklistValues.add(pe.getValue());
+                        this.PicklistValueInfos.add(m);
+                    }
+				}
+            }
+            
+            this.DependencyMap = new map<string, string[]>();    
+            this.DependencyInfo = new list<map<string,object>>();
+            if (init.isDependentPicklist() ){
+				Schema.DescribeFieldResult ctrlDfr = init.getController().getDescribe();
+                string controllerName = ctrlDfr.getName();
+                string dependentName = init.getName();                
+            	 map<string, string[]> mapDependency = PicklistHelper.getDependentOptionsMap(sobjectName,controllerName,dependentName);
+                if (mapDependency!= null) {
+                    this.DependencyMap = mapDependency;
+                    this.ControllerInfo = new FieldInfo(ctrlDfr, sobjectName, sortPicklistValues, recordTypeApiName );
+                    for(string key : mapDependency.keyset()){
+                        map<string,object> m = new map<string,object>();
+                        m.put('Value', key);
+                        m.put('PickList', mapDependency.get(key) );
+                        this.DependencyInfo.add(m);
+                    }
+                }
+            }
+            
+            //Sort Values
+            if (sortPicklistValues) {                 
+                if (this.PicklistValues.size() > 0) this.PicklistValues.sort();
+                if ( this.DependencyMap.size() > 0) for(string key : this.DependencyMap.keyset()) this.DependencyMap.get(key).sort();
+            }
+        }
+    }
+    
+    global class RecordTypeInfo {
+        @AuraEnabled global string Name {get;set;}
+        @AuraEnabled global Id RecordTypeId {get;set;}
+        @AuraEnabled global boolean isAvailable {get;set;}
+        @AuraEnabled global boolean isDefaultRecordTypeMapping {get;set;}
+        @AuraEnabled global boolean isMaster {get;set;}
+        
+        public RecordTypeInfo(Schema.RecordTypeInfo init){            
+            this.Name = init.getName();
+            this.RecordTypeId = init.getRecordTypeId();
+            this.isAvailable = init.isAvailable();
+            this.isDefaultRecordTypeMapping = init.isDefaultRecordTypeMapping();
+            this.isMaster = init.isMaster();
+        }
+    }
+    
+    global class SObjectInfo{
+        @AuraEnabled global boolean HasSubtypes {get;set;}
+        @AuraEnabled global string KeyPrefix {get;set;}
+        @AuraEnabled global string Label {get;set;}
+        @AuraEnabled global string LabelPlural {get;set;}
+        @AuraEnabled global string LocalName {get;set;}
+        @AuraEnabled global string Name {get;set;}
+        @AuraEnabled global string NameField {get;set;}
+        @AuraEnabled global set<string> Fields {get;set;}
+        
+        @AuraEnabled global RecordTypeInfo[] RecordTypeInfos {get;set;}
+        @AuraEnabled global map<Id, RecordTypeInfo> RecordTypeInfosById {get;set;}
+        @AuraEnabled global map<string, RecordTypeInfo> RecordTypeInfosByName {get;set;}
+        
+        @AuraEnabled global boolean isAccessible {get;set;}
+        @AuraEnabled global boolean isCreateable {get;set;}
+        @AuraEnabled global boolean isCustom {get;set;}
+        @AuraEnabled global boolean isCustomSetting {get;set;}
+        @AuraEnabled global boolean isDeletable {get;set;}
+        @AuraEnabled global boolean isDeprecatedAndHidden {get;set;}
+        @AuraEnabled global boolean isFeedEnabled {get;set;}
+        @AuraEnabled global boolean isMergeable {get;set;}
+        @AuraEnabled global boolean isMruEnabled {get;set;}
+        @AuraEnabled global boolean isQueryable {get;set;}
+        @AuraEnabled global boolean isSearchable {get;set;}
+        @AuraEnabled global boolean isUndeletable {get;set;}
+        @AuraEnabled global boolean isUpdateable {get;set;}
+        
+        
+        public SObjectInfo(Schema.DescribeSObjectResult init){
+            this.HasSubtypes = init.getHasSubtypes();
+            this.KeyPrefix = init.getKeyPrefix();
+            this.Label = init.getLabel();
+            this.LabelPlural = init.getLabelPlural();
+            this.LocalName = init.getLocalName();
+            this.Name = init.getName();
+            
+            this.isAccessible = init.isAccessible();
+            this.isCreateable = init.isCreateable();
+            this.isCustom = init.isCustom();
+            this.isCustomSetting = init.isCustomSetting();
+            this.isDeletable = init.isDeletable();
+            this.isDeprecatedAndHidden = init.isDeprecatedAndHidden();
+            this.isFeedEnabled = init.isFeedEnabled();
+            this.isMergeable = init.isMergeable();
+            this.isMruEnabled = init.isMruEnabled();
+            this.isQueryable = init.isQueryable();
+            this.isSearchable = init.isSearchable();
+            this.isUndeletable = init.isUndeletable();
+            this.isUpdateable = init.isUpdateable();
+            
+            this.RecordTypeInfos = new list<RecordTypeInfo>();
+            this.RecordTypeInfosById = new map<Id, RecordTypeInfo>();
+            this.RecordTypeInfosByName = new map<string, RecordTypeInfo>();
+            
+            
+            map<id, schema.RecordTypeInfo> rtbyIdMap = init.getRecordTypeInfosById();
+            map<string, schema.RecordTypeInfo> rtByNameMap = init.getRecordTypeInfosByName();
+            
+            for(Schema.RecordTypeInfo rti : init.getRecordTypeInfos()) {
+                this.RecordTypeInfos.add(new RecordTypeInfo(rti));
+            }
+            
+            if (rtbyIdMap != null) { 
+                for(Id rtId : rtbyIdMap.keyset()){
+                    this.RecordTypeInfosById.put(rtId, new RecordTypeInfo(rtbyIdMap.get(rtId)));
+                } 
+            }
+            
+            if (rtByNameMap != null) {
+                for(String rtName : rtByNameMap.keyset()) {
+                    this.RecordTypeInfosByName.put(rtName, new RecordTypeInfo(rtByNameMap.get( rtName )));
+                }
+            }
+            
+            this.Fields = new set<string>();
+            map<string, Schema.SObjectField> soFields = init.fields.getMap();
+            Schema.DescribeFieldResult dfr;
+            if ( soFields.size() > 0){
+                for(string fieldName : soFields.keyset()){
+                    dfr = soFields.get(fieldName).getDescribe();
+                    this.Fields.add( dfr.getName() );
+                    if (dfr.isNameField()) this.NameField = dfr.getName();
+                } 
+            }
+        }
+    }
+    
+    static map<string, map<string,FieldInfo>> getFieldInfosCache{get;set;}
+    global static map<string, FieldInfo> getFieldInfos(string sobjectName, string[] fieldNames, boolean sortPicklistValues, string recordTypeApiName){
+        if (getFieldInfosCache == null) getFieldInfosCache = new map<string,map<string,FieldInfo>>();
+        string keyName = 
+            sobjectName + ';;;' +
+            string.valueOf(fieldNames)+';;;'+ 
+            sortPicklistValues + ';;;' +
+            ((fieldNames!=null)?string.join(fieldNames,','):'') + ';;;' +
+			string.valueOf(sortPicklistValues);
+        
+        if (!getFieldInfosCache.containsKey(keyName)){
+            map<string, FieldInfo> result = new  map<string, FieldInfo>();
+            if (Schema.getGlobalDescribe().containsKey(sobjectName)){
+                Schema.DescribeSObjectResult dor = Schema.getGlobalDescribe().get(sobjectName).getDescribe();
+                map<string, Schema.SObjectField> fieldMap = dor.fields.getMap();
+                
+                string[] fieldsToLookFor = (fieldNames==null)?new list<string>(fieldMap.keyset()):fieldNames;
+                
+                for(string fieldName : fieldsToLookFor){
+                    Schema.DescribeFieldResult field = fieldMap.get(fieldName).getDescribe();
+                    result.put(field.getName(), new FieldInfo(field, sobjectName, true, recordTypeApiName) );
+                }
+            }
+            getFieldInfosCache.put(keyName, result);
+        }
+        return getFieldInfosCache.get(keyName);
+    }
+    // *****************END EXPERIMENTS*********************
+    
+    
     global static map<string, map<string, map<string,object>>> ObjectCachedMetadata{get;set;}
-    
-    
     global static map<string, map<string,object>> getFieldsMetadataMap(string objectName, string[] fieldNames, boolean sortPicklistValues, string recordTypeApiName){                        
         map<string, map<string,object>> result = new map<string, map<string,object>>();
         Map<String,Schema.SObjectType> objGlobalMap = Schema.getGlobalDescribe();        
@@ -130,39 +415,15 @@ global class MetadataHelper {
     }    
     
     
-    global static map<string, map<string,object>> getObjectsMetadataMap( string[] objectNames ){
-        map<string, map<string,object>> result = new map<string, map<string,object>>();
-        Map<String,Schema.SObjectType> objGlobalMap = Schema.getGlobalDescribe();
-        for (string objectName : objectNames){
-            if (objGlobalMap.containsKey(objectName)){
-                Schema.DescribeSObjectResult dor = objGlobalMap.get(objectName).getDescribe();              
-                result.put(objectName, new map<string,object>());
-                //result.get(objectName).put('ChildRelationships', dor.getChildRelationships() );
-                result.get(objectName).put('HasSubtypes', dor.getHasSubtypes() );
-                result.get(objectName).put('KeyPrefix', dor.getKeyPrefix() );
-                result.get(objectName).put('Label', dor.getLabel() );
-                result.get(objectName).put('LabelPlural', dor.getLabelPlural() );
-                result.get(objectName).put('LocalName', dor.getLocalName() );
-                result.get(objectName).put('Name', dor.getName() );
-                //result.get(objectName).put('RecordTypeInfos', dor.getRecordTypeInfos() );
-                //result.get(objectName).put('RecordTypeInfosById', dor.getRecordTypeInfosById() );
-                //result.get(objectName).put('RecordTypeInfosByName', dor.getRecordTypeInfosByName() );
-                //result.get(objectName).put('SobjectType', dor.getSobjectType() );
-                result.get(objectName).put('isAccessible', dor.isAccessible() );
-                result.get(objectName).put('isCreateable', dor.isCreateable() );
-                result.get(objectName).put('isCustom', dor.isCustom() );
-                result.get(objectName).put('isCustomSetting', dor.isCustomSetting() );
-                result.get(objectName).put('isDeletable', dor.isDeletable() );
-                result.get(objectName).put('isDeprecatedAndHidden', dor.isDeprecatedAndHidden() );
-                result.get(objectName).put('isFeedEnabled', dor.isFeedEnabled() );
-                result.get(objectName).put('isMergeable', dor.isMergeable() );
-                result.get(objectName).put('isMruEnabled', dor.isMruEnabled() );
-                result.get(objectName).put('isQueryable', dor.isQueryable() );
-                result.get(objectName).put('isSearchable', dor.isSearchable() );
-                result.get(objectName).put('isUndeletable', dor.isUndeletable() );
-                result.get(objectName).put('isUpdateable', dor.isUpdateable() );
+    global static map<string, SObjectInfo> getSObjectInfosMap( set<string> sobjectNames ){
+        map<string, SObjectInfo> sobjectInfoMap = new map<string, SObjectInfo>();
+        map<string, Schema.SObjectType> globalMap = Schema.getGlobalDescribe();
+        for (string sobjectName : sobjectNames ){
+            if (globalMap.containsKey(sobjectName)){
+                Schema.DescribeSObjectResult dor = globalMap.get(sobjectName).getDescribe();
+                sobjectInfoMap.put( dor.getName(), new SobjectInfo(dor)  );
             }
         }
-        return result;
-    }
+        return sobjectInfoMap;
+    }    
 }

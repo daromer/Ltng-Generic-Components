@@ -1,65 +1,81 @@
 <aura:component extends="c:ltngBase">
+
     <!--Public Attributes-->
-    <aura:attribute name="value" type="String" />
+	<aura:attribute name="value" type="String" />
 	<aura:attribute name="options" type="String[]" default="[]" />
     <aura:attribute name="wrapperStyle" type="String" default="padding: 1rem;"/>
-    <aura:attribute name="field" type="String" description="example 'Account.Status' " /> 
-    <aura:attribute name="expressionIndex" type="String" access="PRIVATE" />
+    <aura:attribute name="field" type="String" description="example 'Account.Status' " />
     
-    
+    <aura:attribute name="availableLabel" type="String" default="Available Values"/>
+    <aura:attribute name="selectedLabel" type="String" Default="Selected Values" />
+
     <!--Private Attributes-->
     <aura:attribute name="availableOptions" type="String[]" 	access="PRIVATE" />
     <aura:attribute name="selectedOptions" 	type="String[]" 	access="PRIVATE" />
-    <aura:attribute name="selectedValuesLeft" type="String[]" 	access="PRIVATE" />
-    <aura:attribute name="selectedValuesRight" type="String[]" 	access="PRIVATE" />
-    
-    
+    <aura:attribute name="grabbedOptions" 	type="String[]" 	access="PRIVATE" />
+
+    <aura:attribute name="UI_SELECTED_OPTION_ATTRIBUTE"		type="String"	access="PRIVATE"	default="aria-selected"/>
+    <aura:attribute name="UI_OPTIONS_WHICH_ARE_SELECTED"	type="String"	access="PRIVATE"	default="span[aria-selected='true']"/>
+	<aura:attribute name="QUANTITY_OF_ELEMENTS_REMOVED_EACH_TIME"	type="Integer"	access="PRIVATE"	default="1"/>
+
+
     <aura:handler name="init" value="{!this}" action="{!c.onInit}" />
-    <!--<aura:handler name="change" value="{!v.selectedValue}" action="{!c.selectedValueChanged}" />-->
+    <aura:handler name="change" value="{!v.grabbedOptions}" action="{!c.grabbedOptionChanged}" />
     <aura:handler name="change" value="{!v.selectedOptions}" action="{!c.selectedOptionsChangedHandler}" />
-    <aura:handler name="change" value="{!v.options}" action="{!c.optionsChangedHandler}" />
-    <aura:handler name="change" value="{!v.value}" action="{!c.onValueChange}" />
-    
-    
+    <aura:handler name="change" value="{!v.options}" action="{!c.originalOptionsChangedHandler}" />
+
     <div style="{!v.wrapperStyle}">
         <div class="slds-dueling-list">
+
             <div class="slds-assistive-text" id="drag-live-region" aria-live="assertive"></div>
             <div class="slds-assistive-text" id="option-drag-label">Press space bar when on an item, to move it within the list. CMD plus left and right arrow keys, to move items between lists.</div>
+
             <div class="slds-dueling-list__column">
-                <span class="slds-form-element__label" id="label-49">Available Values</span>
+                <span class="slds-form-element__label" id="label-49">{!v.availableLabel}</span>
                 <div class="slds-dueling-list__options" role="application">
                     <!--aria-describedby="option-drag-label"-->
-                    <ul aria-labelledby="label-49" aria-multiselectable="false" class="slds-listbox slds-listbox_vertical" role="listbox" tabindex="0">
+                    <ul aria-labelledby="label-49" aria-multiselectable="true"
+                        class="slds-listbox slds-listbox_vertical"
+                        role="listbox"
+                        tabindex="0">
                         <aura:iteration items="{!v.availableOptions}" var="op">
                             <li role="presentation" class="slds-listbox__item">
-                                <span class="slds-listbox__option slds-listbox__option_plain slds-media" draggable="false" role="option" tabindex="0"  onclick="{!c.leftOptionSelectedHandler}" >{!op}</span>                                
+                                <span class="slds-listbox__option slds-listbox__option_plain slds-media" draggable="false"
+                                      role="option"
+                                      tabindex="0"
+                                      onclick="{!c.grabbingFromAvailableBox}" >{!op}</span>
                             </li>
                         </aura:iteration>
                     </ul>
                 </div>
-            </div>            
-            <div class="slds-dueling-list__column">
-                <lightning:buttonIcon iconName="utility:chevronleft" alternativeText="Remove" onclick="{!c.removeFromSelectedHandler}"/>
-                <lightning:buttonIcon iconName="utility:chevronright" alternativeText="Add" onclick="{!c.addToSelectedHandler}"/>               
             </div>
+
             <div class="slds-dueling-list__column">
-                <span class="slds-form-element__label" id="label-54">Selected Values</span>
+                <lightning:buttonIcon iconName="utility:chevronright" alternativeText="Add" onclick="{!c.addToSelectedBoxHandler}"/>
+                <lightning:buttonIcon iconName="utility:chevronleft" alternativeText="Remove" onclick="{!c.removeFromSelectedBoxHandler}"/>
+            </div>
+
+            <div class="slds-dueling-list__column">
+                <span class="slds-form-element__label" id="label-54">{!v.selectedLabel}</span>
                 <div class="slds-dueling-list__options" role="application">
-                    <ul aria-describedby="option-drag-label" aria-labelledby="label-54" aria-multiselectable="true" class="slds-listbox slds-listbox_vertical" role="listbox" tabindex="0">
+                    <ul aria-describedby="option-drag-label" aria-labelledby="label-54"
+                        aria-multiselectable="true"
+                        class="slds-listbox slds-listbox_vertical"
+                        role="listbox"
+                        tabindex="0">
                         <aura:iteration items="{!v.selectedOptions}" var="op">
                             <li role="presentation" class="slds-listbox__item">
-                                <span class="slds-listbox__option slds-listbox__option_plain slds-media" draggable="false" role="option" tabindex="0" onclick="{!c.rightOptionSelectedHandler}">{!op}</span>                                
+                                <span class="slds-listbox__option slds-listbox__option_plain slds-media" draggable="false"
+                                      role="option"
+                                      tabindex="0"
+                                      onclick="{!c.grabbingFromSelectedBox}">{!op}</span>
                             </li>
-                        </aura:iteration>                       
+                        </aura:iteration>
                     </ul>
                 </div>
             </div>
-            <!--
-            <div class="slds-dueling-list__column">
-                <lightning:buttonIcon iconName="utility:chevronup" alternativeText="Close" onclick="{!c.moveSelectedUpHandler}"/>
-                <lightning:buttonIcon iconName="utility:chevrondown" alternativeText="Close" onclick="{!c.moveSelectedDownHandler}"/>                
-            </div>
-			-->
+
         </div>
     </div>
+
 </aura:component>

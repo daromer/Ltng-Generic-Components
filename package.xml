@@ -5,8 +5,10 @@
         <members>LtngFormElementController</members>
         <members>MetadataHelper</members>
         <members>MetadataHelper_Test</members>
+        <members>MetadataService</members>
         <members>PicklistHelper</members>
         <members>PicklistHelper_Test</members>
+        <members>PicklistValuesByRecordTypeBatch</members>
         <name>ApexClass</name>
     </types>
     <types>
@@ -20,6 +22,10 @@
         <members>inputLookup</members>
         <members>toggleCheckbox</members>
         <name>AuraDefinitionBundle</name>
+    </types>
+    <types>
+        <members>Picklist_Values_By_RecordType__c</members>
+        <name>CustomObject</name>
     </types>
     <version>39.0</version>
 </Package>
