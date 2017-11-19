@@ -9,6 +9,8 @@
         <members>PicklistHelper</members>
         <members>PicklistHelper_Test</members>
         <members>PicklistValuesByRecordTypeBatch</members>
+        <members>RecordDisplayController</members>
+        <members>RecordHistoryController</members>
         <name>ApexClass</name>
     </types>
     <types>
@@ -18,6 +20,8 @@
     <types>
         <members>DuelingPicklist</members>
         <members>LtngFormElement</members>
+        <members>RecordDisplay</members>
+        <members>RecordHistory</members>
         <members>inputFieldLookup</members>
         <members>inputLookup</members>
         <members>toggleCheckbox</members>

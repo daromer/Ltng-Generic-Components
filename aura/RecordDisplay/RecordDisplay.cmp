@@ -1,0 +1,9 @@
+<aura:component controller="RecordDisplayController" implements="force:hasRecordId">
+    <aura:attribute name="record" type="Object" />
+    <aura:attribute name="label" type="String" />
+    <aura:handler name="change" value="{!v.recordId}" action="{!c.handleIdChange}" />
+    <aura:handler name="init" value="{!this}" action="{!c.handleInit}" />    
+    <aura:if isTrue="{!v.record}">
+        <a href="{!v.record.url}">{!v.label?v.label:v.record.name}</a>
+    </aura:if>
+</aura:component>

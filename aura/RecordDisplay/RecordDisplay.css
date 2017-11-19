@@ -1,0 +1,7 @@
+.THIS.link{
+    color:blue;    
+}
+.THIS.link:hover{    
+    text-decoration:underline;
+    cursor:pointer;
+}

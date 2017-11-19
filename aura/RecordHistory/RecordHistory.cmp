@@ -1,0 +1,54 @@
+<aura:component implements="force:hasRecordId" access="global" controller="RecordHistoryController" >
+    <aura:attribute name="results" type="Object" />
+    <aura:attribute name="dateFormat" type="String" default="MMMM DD, YYYY hh:mma"/>
+    <aura:handler name="init" value="{!this}" action="{!c.onInitHandler}" />
+    
+    <aura:if isTrue="{!v.results}">        
+        <table class="slds-table slds-table_bordered slds-table_cell-buffer">
+            <thead>
+                <tr class="slds-text-title_caps">
+                    <th scope="col">
+                        <div class="slds-truncate">Date</div>
+                    </th>
+                    <th scope="col">
+                        <div class="slds-truncate">User</div>
+                    </th>
+                    <th scope="col">
+                        <div class="slds-truncate">Action</div>
+                    </th>                            
+                </tr>
+            </thead>
+            <tbody>
+                <aura:iteration items="{!v.results.history}" var="h">
+                    <tr>
+                        <td >
+                            <div class="slds-truncate">                                        
+                                <ui:outputDate value="{!h.CreatedDate}" format="{!v.dateFormat}" />
+                            </div>                                    
+                        </td>
+                        <td >                                    
+                            <div class="slds-truncate" >
+                                <aura:if isTrue="{!h.Field!='created'}">
+                                    <c:RecordDisplay recordId="{!h.CreatedById}"/>
+                                </aura:if>
+                            </div>                                    
+                        </td>
+                        <td >
+                            <div class="slds-truncate" >
+                                <aura:if isTrue="{!h.Field!='created'}">
+                                    Changed <strong>{!h.FieldLabel}</strong>
+                                    <aura:if isTrue="{!h.OldValue}"> from <strong>{!h.OldValue}</strong> </aura:if>                                            
+                                    to <strong>{!h.NewValue}</strong>
+                                    <aura:set attribute="else">Created</aura:set>
+                                </aura:if>
+                            </div>
+                        </td>                           
+                    </tr> 
+                </aura:iteration>
+            </tbody>
+            <aura:if isTrue="{!v.results.history.length == 0}">
+                <tfoot> No Results Found </tfoot>
+            </aura:if>
+        </table>
+    </aura:if>
+</aura:component>
