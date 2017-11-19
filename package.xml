@@ -11,6 +11,8 @@
         <members>PicklistValuesByRecordTypeBatch</members>
         <members>RecordDisplayController</members>
         <members>RecordHistoryController</members>
+        <members>ResponseWrapper</members>
+        <members>ResponseWrapperBase</members>
         <name>ApexClass</name>
     </types>
     <types>
